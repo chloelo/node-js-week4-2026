@@ -77,35 +77,42 @@ router.post('/register', async (req, res) => {
 router.METHOD('PATH', async (req, res) => { ... });
 */
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = users.find((user) => user.email === email);
+    const user = users.find((user) => user.email === email);
 
-  if (!user) {
+    if (!user) {
     return res.status(401).json({ status: 'false', message: '帳號或密碼錯誤' });
-  }
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
-  if (!isMatch) {
+    if (!isMatch) {
     return res.status(401).json({ status: 'false', message: '帳號或密碼錯誤' });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '30d',
+      },
+    );
+
+    return res.status(200).json({
+      status: 'success',
+      token,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: 'false',
+      message: '伺服器錯誤',
+    });
   }
-
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: '30d',
-    },
-  );
-
-  return res.status(200).json({
-    status: 'success',
-    token,
-  });
 });
 
 // ───────────────────────────────────────────────────────────
